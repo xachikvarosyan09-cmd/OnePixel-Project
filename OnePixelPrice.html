@@ -271,35 +271,35 @@ canvas.addEventListener('touchend', e => {
 });
 
 // 4. Оригинальное событие отпускания мышки (работает и для ПК, и для телефона)
+// 4. Оригинальное событие отпускания мышки (работает и для ПК, и для телефона)
 canvas.addEventListener('mouseup', e => {
     if (!isDrawing) return;
     isDrawing = false;
     redraw();
 
     if (!isDragging) {
-        // ПРОСТО КЛИК - Открываем меню управления баннером
+        // ПРОСТО КЛИК (БЕЗ ТЯНУЧКИ) - Открываем меню управления существующим баннером
         const block = getBlockAt(startX, startY);
         if (block) {
             selectedBlock = block;
             openEditModal();
-        } else {
-            // ВЫДЕЛЕНИЕ (ТЯНУЛИ МЫШКУ) - Открываем меню покупки
-            const x = Math.min(startX, endX);
-            const y = Math.min(startY, endY);
-            const w = Math.max(startX, endX) - startX + gridSize;
-            const h = Math.max(startY, endY) - startY + gridSize;
-
-            if (checkOverlap(x, y, w, h)) {
-                alert("Вы задели чужой баннер! Выделяйте только свободное место.");
-                return;
-            }
-
-            currentSelection = { x, y, w, h };
-            openBuyModal(w, h);
         }
+    } else {
+        // ВЫДЕЛЕНИЕ (ТЯНУЛИ МЫШКУ ИЛИ ПАЛЕЦ) - Открываем меню покупки нового места
+        const x = Math.min(startX, endX);
+        const y = Math.min(startY, endY);
+        const w = Math.abs(endX - startX) + gridSize;
+        const h = Math.abs(endY - startY) + gridSize;
+
+        if (checkOverlap(x, y, w, h)) {
+            alert("Вы задели чужой баннер! Выделяйте только свободное место.");
+            return;
+        }
+
+        currentSelection = { x, y, w, h };
+        openBuyModal(w, h);
     }
 });
-
         function openBuyModal(w, h) {
             document.getElementById('modal-title').textContent = "Оформление зоны";
             document.getElementById('ui-size').textContent = `Размер: ${w} x ${h} px`;
