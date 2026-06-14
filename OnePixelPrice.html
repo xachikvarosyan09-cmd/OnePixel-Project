@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
+<head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes">
     <meta charset="UTF-8">
     <title>OnePixelPrice | Купи свой пиксель</title>
     <style>
@@ -205,8 +205,38 @@
             endY = Math.floor(((e.clientY - rect.top) / scale) / gridSize) * gridSize;
             redraw();
         });
+        // --- ПОДДЕРЖКА ТЕЛЕФОНОВ (КАСАНИЯ) ---
 
-        canvas.addEventListener('mouseup', () => {
+canvas.addEventListener('touchstart', e => {
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0]; // Берем координаты первого пальца
+    
+    startX = Math.floor(((touch.clientX - rect.left) / scale) / gridSize) * gridSize;
+    startY = Math.floor(((touch.clientY - rect.top) / scale) / gridSize) * gridSize;
+    endX = startX;
+    endY = startY;
+    isDrawing = true;
+    isDragging = false;
+});
+
+canvas.addEventListener('touchmove', e => {
+    if (!isDrawing) return;
+    isDragging = true;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0]; // Берем координаты пальца при движении
+    
+    endX = Math.floor(((touch.clientX - rect.left) / scale) / gridSize) * gridSize;
+    endY = Math.floor(((touch.clientY - rect.top) / scale) / gridSize) * gridSize;
+    redraw();
+});
+
+   // Когда отпускаем палец на телефоне - эмулируем отпускание мышки
+canvas.addEventListener('touchend', e => {
+    canvas.dispatchEvent(new Event('mouseup'));
+});
+
+// Оригинальное событие отпускания мышки (работает и для ПК, и для телефона)
+canvas.addEventListener('mouseup', e => {
             if (!isDrawing) return;
             isDrawing = false;
             redraw(); 
