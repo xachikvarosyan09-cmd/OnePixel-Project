@@ -207,64 +207,98 @@
         });
         // --- ПОДДЕРЖКА ТЕЛЕФОНОВ (КАСАНИЯ) ---
 
+let touchTimeout;
+
+// 1. Обработка начала касания (Touch Start)
 canvas.addEventListener('touchstart', e => {
-    if (e.touches.length > 1) { isDrawing = false; return; }
+    if (e.touches.length > 1) { 
+        clearTimeout(touchTimeout);
+        isDrawing = false; 
+        return; 
+    } 
+
     const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0]; // Берем координаты первого пальца
-    
-    startX = Math.floor(((touch.clientX - rect.left) / scale) / gridSize) * gridSize;
-    startY = Math.floor(((touch.clientY - rect.top) / scale) / gridSize) * gridSize;
-    endX = startX;
-    endY = startY;
-    isDrawing = true;
-    isDragging = false;
+    const touch = e.touches[0];
+    const initialTouchX = touch.clientX;
+    const initialTouchY = touch.clientY;
+
+    isDrawing = false; 
+    clearTimeout(touchTimeout);
+
+    touchTimeout = setTimeout(() => {
+        startX = Math.floor(((initialTouchX - rect.left) / scale) / gridSize) * gridSize;
+        startY = Math.floor(((initialTouchY - rect.top) / scale) / gridSize) * gridSize;
+        endX = startX;
+        endY = startY;
+        isDrawing = true; 
+        isDragging = false;
+        
+        if (navigator.vibrate) navigator.vibrate(20); 
+    }, 500); 
 });
 
+// 2. Обработка движения пальца (Touch Move)
 canvas.addEventListener('touchmove', e => {
-   if (e.touches.length > 1) { isDrawing = false; redraw(); return; }
-    if (!isDrawing) return;
+    if (e.touches.length > 1) { 
+        clearTimeout(touchTimeout);
+        isDrawing = false; 
+        redraw(); 
+        return; 
+    } 
+
+    if (!isDrawing) {
+        clearTimeout(touchTimeout); 
+        return; 
+    }
+
+    e.preventDefault(); 
     isDragging = true;
     const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0]; // Берем координаты пальца при движении
+    const touch = e.touches[0];
     
     endX = Math.floor(((touch.clientX - rect.left) / scale) / gridSize) * gridSize;
     endY = Math.floor(((touch.clientY - rect.top) / scale) / gridSize) * gridSize;
-    redraw();
+    redraw(); 
 });
 
-   // Когда отпускаем палец на телефоне - эмулируем отпускание мышки
+// 3. Обработка конца касания (Touch End)
 canvas.addEventListener('touchend', e => {
-    canvas.dispatchEvent(new Event('mouseup'));
+    clearTimeout(touchTimeout); 
+
+    if (isDrawing) {
+        canvas.dispatchEvent(new Event('mouseup'));
+    }
 });
 
-// Оригинальное событие отпускания мышки (работает и для ПК, и для телефона)
+// 4. Оригинальное событие отпускания мышки (работает и для ПК, и для телефона)
 canvas.addEventListener('mouseup', e => {
-            if (!isDrawing) return;
-            isDrawing = false;
-            redraw(); 
+    if (!isDrawing) return;
+    isDrawing = false;
+    redraw();
 
-            if (!isDragging) {
-                // ПРОСТО КЛИК - Открываем меню управления баннером
-                const block = getBlockAt(startX, startY);
-                if (block) {
-                    selectedBlock = block;
-                    openEditModal();
-                }
-            } else {
-                // ВЫДЕЛЕНИЕ (ТЯНУЛИ МЫШКУ) - Открываем меню покупки
-                const x = Math.min(startX, endX);
-                const y = Math.min(startY, endY);
-                const w = Math.abs(endX - startX) + gridSize;
-                const h = Math.abs(endY - startY) + gridSize;
+    if (!isDragging) {
+        // ПРОСТО КЛИК - Открываем меню управления баннером
+        const block = getBlockAt(startX, startY);
+        if (block) {
+            selectedBlock = block;
+            openEditModal();
+        } else {
+            // ВЫДЕЛЕНИЕ (ТЯНУЛИ МЫШКУ) - Открываем меню покупки
+            const x = Math.min(startX, endX);
+            const y = Math.min(startY, endY);
+            const w = Math.max(startX, endX) - startX + gridSize;
+            const h = Math.max(startY, endY) - startY + gridSize;
 
-                if (checkOverlap(x, y, w, h)) {
-                    alert("Вы задели чужой баннер! Выделяйте только свободное место.");
-                    return;
-                }
-                currentSelection = { x, y, w, h };
-                openBuyModal(w, h);
+            if (checkOverlap(x, y, w, h)) {
+                alert("Вы задели чужой баннер! Выделяйте только свободное место.");
+                return;
             }
-        });
+
+            currentSelection = { x, y, w, h };
+            openBuyModal(w, h);
+        }
+    }
+});
 
         function openBuyModal(w, h) {
             document.getElementById('modal-title').textContent = "Оформление зоны";
