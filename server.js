@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
 });
 
 // === СЮДА МЫ ВСТАВИМ ССЫЛКУ ИЗ ИНТЕРНЕТА ===
-const WEB_APP_URL = 'https://cute-rabbits-battle.loca.lt';
+const WEB_APP_URL = 'https://onepixel-project.onrender.com';
 
 // 2. Бот отправляет сообщение с кнопкой Web App
 bot.start((ctx) => {
