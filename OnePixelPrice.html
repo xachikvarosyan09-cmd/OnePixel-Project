@@ -300,19 +300,42 @@ canvas.addEventListener('mouseup', e => {
         openBuyModal(w, h);
     }
 });
-        function openBuyModal(w, h) {
-            document.getElementById('modal-title').textContent = "Оформление зоны";
-            document.getElementById('ui-size').textContent = `Размер: ${w} x ${h} px`;
-            document.getElementById('ui-info').textContent = `${((w * h) * pricePerPixel).toFixed(2)} $`;
-            document.getElementById('user-url').value = '';
-            document.getElementById('user-image').value = '';
-            
-            document.getElementById('menu-edit').style.display = 'none';
-            document.getElementById('menu-buy').style.display = 'block';
-            
-            document.getElementById('modal-overlay').style.display = 'block';
-            document.getElementById('modal').style.display = 'block';
-        }
+            function openBuyModal(w, h) {
+    const modal = document.getElementById('modal');
+    const content = document.getElementById('modal-content');
+    
+    // Считаем цену (например, 1 блок 10х10 = 0.01 USDT)
+    const blocksCount = (w / 10) * (h / 10);
+    const price = (blocksCount * 0.01).toFixed(2);
+
+    // Твой личный кошелек
+    const myWalletTRC20 = "TCVUnMFhFq7zCjrea22QTSA4BX6vYznrm7"; 
+    const myTelegram = "https://t.me/@MrBiznesEpta";
+
+    content.innerHTML = `
+        <h2 style="margin-top:0;">Оплата места</h2>
+        <p>Размер: <b>${w}x${h}</b> пикселей</p>
+        <p>К оплате: <b style="color: #27ae60; font-size: 18px;">${price} USDT</b></p>
+        <hr style="margin: 15px 0;">
+        <p style="font-size: 14px; color: #555;">Переведите точную сумму на этот TRC20 адрес:</p>
+        <div style="background: #f1f1f1; padding: 10px; border-radius: 5px; font-family: monospace; word-break: break-all; margin-bottom: 15px;">
+            <b>${myWalletTRC20}</b>
+        </div>
+        <p style="font-size: 13px; color: #e74c3c;">Внимание: Сеть строго Tron (TRC20)!</p>
+        
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="window.open('${myTelegram}', '_blank')" style="flex: 1; padding: 10px; background: #2980b9; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                Я оплатил (написать Админу)
+            </button>
+            <button onclick="closeModal()" style="padding: 10px; background: #ccc; border: none; border-radius: 5px; cursor: pointer;">
+                Отмена
+            </button>
+        </div>
+    `;
+    
+    modal.style.display = 'flex';
+}
+        
 
         function openEditModal() {
             document.getElementById('modal-title').textContent = "Управление зоной";
