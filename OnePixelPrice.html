@@ -301,8 +301,8 @@ canvas.addEventListener('mouseup', e => {
     }
 }); function openBuyModal(w, h) {
     const modal = document.getElementById('modal');
-    const content = document.getElementById('modal');
-}
+    const overlay = document.getElementById('modal-overlay'); // Добавили активацию фона
+
     // Считаем цену (1 блок 10х10 = 0.01 USDT)
     const blocksCount = (w / 10) * (h / 10);
     const price = (blocksCount * 0.01).toFixed(2);
@@ -311,7 +311,8 @@ canvas.addEventListener('mouseup', e => {
     const myWalletTRC20 = "TCVuMmFHfq7zCjrea22QTSAM8X6vYznrm7";
     const myTelegram = "https://t.me/MrBiznesEpta";
 
-    content.innerHTML = `
+    // Вставляем дизайн прямо в модальное окно
+    modal.innerHTML = `
         <h2 style="margin-top:0;">Оплата места</h2>
         <p>Размер: <b>${w}x${h}</b> пикселей</p>
         <p>К оплате: <b style="color: #27ae60; font-size: 18px;">${price} USDT</b></p>
@@ -338,9 +339,11 @@ canvas.addEventListener('mouseup', e => {
         </div>
     `;
 
+    // Выводим всё на экран ровно и красиво
+    overlay.style.display = 'block';
     modal.style.display = 'flex';
     modal.style.flexDirection = 'column';
-
+}
         function openEditModal() {
             document.getElementById('modal-title').textContent = "Управление зоной";
             
