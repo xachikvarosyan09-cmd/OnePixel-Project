@@ -38,6 +38,7 @@
         .btn-delete { background: #e74c3c; color: white; }
         .btn-cancel { background: #95a5a6; color: white; }
     </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 </head>
 <body>
 
@@ -299,29 +300,31 @@ canvas.addEventListener('mouseup', e => {
         currentSelection = { x, y, w, h };
         openBuyModal(w, h);
     }
-}); function openBuyModal(w, h) {
+}); // Переменные для хранения состояния кошелька
+let userWalletAddress = null;
+let provider = null;
+let signer = null;
+
+// ТВОЙ АДРЕС ДЛЯ ПОЛУЧЕНИЯ ДЕНЕГ (СЕТЬ BSC / BEP-20)
+const myWalletBSC = "0x989c137ac4500c4bb5a8637901212e85512486cf"; 
+
+// Официальный адрес контракта USDT в сети BSC (не менять!)
+const usdtContractAddress = "0x55d398326f99059ff775485246999027b3197955";
+const usdtAbi = ["function transfer(address to, uint256 value) public returns (bool)"];
+
+function openBuyModal(w, h) {
     const modal = document.getElementById('modal');
-    const overlay = document.getElementById('modal-overlay'); // Добавили активацию фона
+    const overlay = document.getElementById('modal-overlay');
 
     // Считаем цену (1 блок 10х10 = 0.01 USDT)
     const blocksCount = (w / 10) * (h / 10);
     const price = (blocksCount * 0.01).toFixed(2);
 
-    // Твой личный кошелек и контакт
-    const myWalletTRC20 = "TCVuMmFHfq7zCjrea22QTSAM8X6vYznrm7";
-    const myTelegram = "https://t.me/MrBiznesEpta";
-
-    // Вставляем дизайн прямо в модальное окно
     modal.innerHTML = `
-        <h2 style="margin-top:0;">Оплата места</h2>
+        <h2 style="margin-top:0;">Web3 Оплата места</h2>
         <p>Размер: <b>${w}x${h}</b> пикселей</p>
-        <p>К оплате: <b style="color: #27ae60; font-size: 18px;">${price} USDT</b></p>
+        <p>К оплате: <b style="color: #27ae60; font-size: 18px;">${price} USDT (BEP-20)</b></p>
         <hr style="margin: 15px 0;">
-        <p style="font-size: 14px; color: #555;">Переведите точную сумму на этот TRC20 адрес:</p>
-        <div style="background: #f1f1f1; padding: 10px; border-radius: 5px; font-family: monospace; word-break: break-all; margin-bottom: 15px;">
-            <b>${myWalletTRC20}</b>
-        </div>
-        <p style="font-size: 13px; color: #e74c3c; margin-bottom: 15px;">Внимание: Сеть строго Tron (TRC20)!</p>
 
         <div style="text-align: left;">
             <p style="font-size: 13px; margin-bottom: 5px; font-weight: bold;">Ссылка при клике (если нужна):</p>
@@ -331,18 +334,68 @@ canvas.addEventListener('mouseup', e => {
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 10px;">
-            <div style="display: flex; gap: 10px;">
-                <button onclick="window.open('${myTelegram}', '_blank')" style="flex: 1; padding: 10px; background: #2980b9; color: white; border: none; border-radius: 5px; cursor: pointer;">1. Написать Админу</button>
-                <button onclick="buySelection()" style="flex: 1; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer;">2. Разместить картинку</button>
-            </div>
+            <button id="btn-connect" onclick="connectWallet()" style="padding: 12px; background: #34495e; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                1. Подключить кошелек
+            </button>
+            <button id="btn-pay" onclick="payWithWeb3('${price}')" style="padding: 12px; background: #7f8c8d; color: white; border: none; border-radius: 5px; cursor: not-allowed; font-weight: bold;" disabled>
+                2. Оплатить и разместить
+            </button>
             <button onclick="closeModal()" style="padding: 10px; background: #ccc; border: none; border-radius: 5px; cursor: pointer;">Отмена</button>
         </div>
     `;
 
-    // Выводим всё на экран ровно и красиво
     overlay.style.display = 'block';
     modal.style.display = 'flex';
     modal.style.flexDirection = 'column';
+}
+
+// Функция подключения кошелька (MetaMask / Trust Wallet)
+async function connectWallet() {
+    if (typeof window.ethereum !== 'undefined') {
+        try {
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            const accounts = await provider.send("eth_requestAccounts", []);
+            userWalletAddress = accounts[0];
+            signer = provider.getSigner();
+
+            document.getElementById('btn-connect').innerText = `Подключено: ${userWalletAddress.substring(0, 6)}...${userWalletAddress.substring(userWalletAddress.length - 4)}`;
+            document.getElementById('btn-connect').style.background = "#27ae60";
+            
+            const payBtn = document.getElementById('btn-pay');
+            payBtn.removeAttribute('disabled');
+            payBtn.style.background = "#2980b9";
+            payBtn.style.cursor = "pointer";
+        } catch (error) {
+            alert("Пользователь отклонил подключение кошелька");
+        }
+    } else {
+        alert("Кошелек не найден! Установите MetaMask или откройте сайт через Trust Wallet браузер.");
+    }
+}
+
+// Функция автоматической оплаты через смарт-контракт USDT
+async function payWithWeb3(amount) {
+    if (!signer) return alert("Сначала подключите кошелек!");
+
+    try {
+        document.getElementById('btn-pay').innerText = "Ожидание оплаты...";
+        document.getElementById('btn-pay').style.background = "#e67e22";
+
+        const usdtContract = new ethers.Contract(usdtContractAddress, usdtAbi, signer);
+        const numberOfTokens = ethers.utils.parseUnits(amount, 18);
+
+        const tx = await usdtContract.transfer(myWalletBSC, numberOfTokens);
+        await tx.wait();
+
+        alert("Оплата успешно прошла! Картинка размещается.");
+        buySelection(); 
+
+    } catch (error) {
+        console.error(error);
+        alert("Ошибка при оплате. Проверьте баланс USDT BEP-20 и BNB для комиссии.");
+        document.getElementById('btn-pay').innerText = "2. Оплатить и разместить";
+        document.getElementById('btn-pay').style.background = "#2980b9";
+    }
 }
         function openEditModal() {
             document.getElementById('modal-title').textContent = "Управление зоной";
