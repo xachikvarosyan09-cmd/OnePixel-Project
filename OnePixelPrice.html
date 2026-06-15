@@ -299,18 +299,17 @@ canvas.addEventListener('mouseup', e => {
         currentSelection = { x, y, w, h };
         openBuyModal(w, h);
     }
-});
-            function openBuyModal(w, h) {
+}); function openBuyModal(w, h) {
     const modal = document.getElementById('modal');
-const content = document.getElementById('modal');
-    
-    // Считаем цену (например, 1 блок 10х10 = 0.01 USDT)
+    const content = document.getElementById('modal');
+}
+    // Считаем цену (1 блок 10х10 = 0.01 USDT)
     const blocksCount = (w / 10) * (h / 10);
     const price = (blocksCount * 0.01).toFixed(2);
 
-    // Твой личный кошелек
-    const myWalletTRC20 = "TCVUnMFhFq7zCjrea22QTSA4BX6vYznrm7"; 
-    const myTelegram = "https://t.me/@MrBiznesEpta";
+    // Твой личный кошелек и контакт
+    const myWalletTRC20 = "TCVuMmFHfq7zCjrea22QTSAM8X6vYznrm7";
+    const myTelegram = "https://t.me/MrBiznesEpta";
 
     content.innerHTML = `
         <h2 style="margin-top:0;">Оплата места</h2>
@@ -321,22 +320,26 @@ const content = document.getElementById('modal');
         <div style="background: #f1f1f1; padding: 10px; border-radius: 5px; font-family: monospace; word-break: break-all; margin-bottom: 15px;">
             <b>${myWalletTRC20}</b>
         </div>
-        <p style="font-size: 13px; color: #e74c3c;">Внимание: Сеть строго Tron (TRC20)!</p>
-        
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button onclick="window.open('${myTelegram}', '_blank')" style="flex: 1; padding: 10px; background: #2980b9; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                Я оплатил (написать Админу)
-            </button>
-            <button onclick="closeModal()" style="padding: 10px; background: #ccc; border: none; border-radius: 5px; cursor: pointer;">
-                Отмена
-            </button>
+        <p style="font-size: 13px; color: #e74c3c; margin-bottom: 15px;">Внимание: Сеть строго Tron (TRC20)!</p>
+
+        <div style="text-align: left;">
+            <p style="font-size: 13px; margin-bottom: 5px; font-weight: bold;">Ссылка при клике (если нужна):</p>
+            <input type="text" id="user-url" placeholder="https://..." style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px;">
+            <p style="font-size: 13px; margin-bottom: 5px; font-weight: bold;">Картинка для пикселей:</p>
+            <input type="file" id="user-image" accept="image/*" style="width: 100%; margin-bottom: 15px;">
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; gap: 10px;">
+                <button onclick="window.open('${myTelegram}', '_blank')" style="flex: 1; padding: 10px; background: #2980b9; color: white; border: none; border-radius: 5px; cursor: pointer;">1. Написать Админу</button>
+                <button onclick="buySelection()" style="flex: 1; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer;">2. Разместить картинку</button>
+            </div>
+            <button onclick="closeModal()" style="padding: 10px; background: #ccc; border: none; border-radius: 5px; cursor: pointer;">Отмена</button>
         </div>
     `;
-    
+
     modal.style.display = 'flex';
-modal.style.flexDirection = 'column';
-}
-        
+    modal.style.flexDirection = 'column';
 
         function openEditModal() {
             document.getElementById('modal-title').textContent = "Управление зоной";
