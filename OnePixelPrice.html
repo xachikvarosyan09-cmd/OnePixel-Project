@@ -300,23 +300,39 @@ canvas.addEventListener('mouseup', e => {
         currentSelection = { x, y, w, h };
         openBuyModal(w, h);
     }
-}); // Переменные для хранения состояния кошелька
+}); // ==========================================
+// 1. ПОДКЛЮЧЕНИЕ FIREBASE (БАЗА ДАННЫХ)
+// ==========================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAL5_m0oje2PkEu5Szx4Ou3FErwZXJuJIE",
+  authDomain: "onepixelprice.firebaseapp.com",
+  projectId: "onepixelprice",
+  storageBucket: "onepixelprice.firebasestorage.app",
+  messagingSenderId: "360540282567",
+  appId: "1:360540282567:web:0a5118e71b51de935e68e2",
+  measurementId: "G-3W85C19CQS"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ==========================================
+// 2. WEB3 И НАСТРОЙКИ КОШЕЛЬКА
+// ==========================================
 let userWalletAddress = null;
 let provider = null;
 let signer = null;
 
-// ТВОЙ АДРЕС ДЛЯ ПОЛУЧЕНИЯ ДЕНЕГ (СЕТЬ BSC / BEP-20)
-const myWalletBSC = "0x989c137ac4500c4bb5a8637901212e85512486cf"; 
-
-// Официальный адрес контракта USDT в сети BSC (не менять!)
+const myWalletBSC = "0x989C137ac4590a4bb5a86379D1212e85512486cf"; 
 const usdtContractAddress = "0x55d398326f99059ff775485246999027b3197955";
 const usdtAbi = ["function transfer(address to, uint256 value) public returns (bool)"];
 
 function openBuyModal(w, h) {
     const modal = document.getElementById('modal');
     const overlay = document.getElementById('modal-overlay');
-
-    // Считаем цену (1 блок 10х10 = 0.01 USDT)
     const blocksCount = (w / 10) * (h / 10);
     const price = (blocksCount * 0.01).toFixed(2);
 
@@ -325,14 +341,12 @@ function openBuyModal(w, h) {
         <p>Размер: <b>${w}x${h}</b> пикселей</p>
         <p>К оплате: <b style="color: #27ae60; font-size: 18px;">${price} USDT (BEP-20)</b></p>
         <hr style="margin: 15px 0;">
-
         <div style="text-align: left;">
             <p style="font-size: 13px; margin-bottom: 5px; font-weight: bold;">Ссылка при клике (если нужна):</p>
             <input type="text" id="user-url" placeholder="https://..." style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px;">
             <p style="font-size: 13px; margin-bottom: 5px; font-weight: bold;">Картинка для пикселей:</p>
             <input type="file" id="user-image" accept="image/*" style="width: 100%; margin-bottom: 15px;">
         </div>
-
         <div style="display: flex; flex-direction: column; gap: 10px;">
             <button id="btn-connect" onclick="connectWallet()" style="padding: 12px; background: #34495e; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
                 1. Подключить кошелек
@@ -343,13 +357,12 @@ function openBuyModal(w, h) {
             <button onclick="closeModal()" style="padding: 10px; background: #ccc; border: none; border-radius: 5px; cursor: pointer;">Отмена</button>
         </div>
     `;
-
     overlay.style.display = 'block';
     modal.style.display = 'flex';
     modal.style.flexDirection = 'column';
 }
+window.openBuyModal = openBuyModal;
 
-// Функция подключения кошелька (MetaMask / Trust Wallet)
 async function connectWallet() {
     if (typeof window.ethereum !== 'undefined') {
         try {
@@ -357,21 +370,79 @@ async function connectWallet() {
             const accounts = await provider.send("eth_requestAccounts", []);
             userWalletAddress = accounts[0];
             signer = provider.getSigner();
-
             document.getElementById('btn-connect').innerText = `Подключено: ${userWalletAddress.substring(0, 6)}...${userWalletAddress.substring(userWalletAddress.length - 4)}`;
             document.getElementById('btn-connect').style.background = "#27ae60";
-            
             const payBtn = document.getElementById('btn-pay');
             payBtn.removeAttribute('disabled');
             payBtn.style.background = "#2980b9";
             payBtn.style.cursor = "pointer";
         } catch (error) {
-            alert("Пользователь отклонил подключение кошелька");
+            alert("Отклонено подключение");
         }
     } else {
-        alert("Кошелек не найден! Установите MetaMask или откройте сайт через Trust Wallet браузер.");
+        alert("Кошелек не найден! Откройте через крипто-браузер.");
     }
 }
+window.connectWallet = connectWallet;
+
+async function payWithWeb3(amount) {
+    if (!signer) return alert("Подключите кошелек!");
+    const fileInput = document.getElementById('user-image');
+    if (!fileInput.files || !fileInput.files[0]) return alert("Сначала выберите картинку!");
+
+    try {
+        document.getElementById('btn-pay').innerText = "Ожидание оплаты...";
+        document.getElementById('btn-pay').style.background = "#e67e22";
+
+        const usdtContract = new ethers.Contract(usdtContractAddress, usdtAbi, signer);
+        const numberOfTokens = ethers.utils.parseUnits(amount, 18);
+        const tx = await usdtContract.transfer(myWalletBSC, numberOfTokens);
+        await tx.wait();
+
+        // СОХРАНЕНИЕ В БАЗУ ДАННЫХ ПОСЛЕ ОПЛАТЫ
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            const base64Image = event.target.result;
+            const url = document.getElementById('user-url').value || "";
+            const blockId = `block_${currentSelection.x}_${currentSelection.y}`;
+
+            await setDoc(doc(db, "pixels", blockId), {
+                x: currentSelection.x,
+                y: currentSelection.y,
+                w: currentSelection.w,
+                h: currentSelection.h,
+                url: url,
+                image: base64Image
+            });
+
+            alert("Оплата прошла! Картинка сохранена в базу данных.");
+            buySelection(); 
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+
+    } catch (error) {
+        console.error(error);
+        alert("Ошибка оплаты.");
+        document.getElementById('btn-pay').innerText = "2. Оплатить и разместить";
+        document.getElementById('btn-pay').style.background = "#2980b9";
+    }
+}
+window.payWithWeb3 = payWithWeb3;
+
+// АВТОЗАГРУЗКА КАРТИНОК ИЗ БАЗЫ ПРИ СТАРТЕ САЙТА
+async function loadPixelsFromFirebase() {
+    const querySnapshot = await getDocs(collection(db, "pixels"));
+    querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const img = new Image();
+        img.onload = function() {
+            ctx.drawImage(img, data.x, data.y, data.w, data.h);
+            savedBanners.push(data);
+        };
+        img.src = data.image;
+    });
+}
+window.addEventListener('load', loadPixelsFromFirebase);
 
 // Функция автоматической оплаты через смарт-контракт USDT
 async function payWithWeb3(amount) {
