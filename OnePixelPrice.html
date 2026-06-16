@@ -301,11 +301,9 @@ canvas.addEventListener('mouseup', e => {
         openBuyModal(w, h);
     }
 }); // ==========================================
-// 1. ПОДКЛЮЧЕНИЕ FIREBASE (БАЗА ДАННЫХ)
 // ==========================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
+// 1. ПОДКЛЮЧЕНИЕ FIREBASE (БЕЗ ОШИБКИ ИМПОРТА)
+// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyAL5_m0oje2PkEu5Szx4Ou3FErwZXJuJIE",
   authDomain: "onepixelprice.firebaseapp.com",
@@ -316,8 +314,26 @@ const firebaseConfig = {
   measurementId: "G-3W85C19CQS"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+let db; // Переменная базы данных
+
+// Динамическая загрузка Firebase (чтобы не ломать твой код)
+function loadFirebase() {
+    return new Promise((resolve) => {
+        const script1 = document.createElement('script');
+        script1.src = "https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js";
+        document.head.appendChild(script1);
+        script1.onload = () => {
+            const script2 = document.createElement('script');
+            script2.src = "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js";
+            document.head.appendChild(script2);
+            script2.onload = () => {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                resolve();
+            };
+        };
+    });
+}
 
 // ==========================================
 // 2. WEB3 И НАСТРОЙКИ КОШЕЛЬКА
@@ -406,7 +422,7 @@ async function payWithWeb3(amount) {
             const url = document.getElementById('user-url').value || "";
             const blockId = `block_${currentSelection.x}_${currentSelection.y}`;
 
-            await setDoc(doc(db, "pixels", blockId), {
+            await db.collection("pixels").doc(blockId).set({
                 x: currentSelection.x,
                 y: currentSelection.y,
                 w: currentSelection.w,
@@ -415,7 +431,7 @@ async function payWithWeb3(amount) {
                 image: base64Image
             });
 
-            alert("Оплата прошла! Картинка сохранена в базу данных.");
+            alert("Оплата прошла! Картинка сохранена.");
             buySelection(); 
         };
         reader.readAsDataURL(fileInput.files[0]);
@@ -431,7 +447,8 @@ window.payWithWeb3 = payWithWeb3;
 
 // АВТОЗАГРУЗКА КАРТИНОК ИЗ БАЗЫ ПРИ СТАРТЕ САЙТА
 async function loadPixelsFromFirebase() {
-    const querySnapshot = await getDocs(collection(db, "pixels"));
+    if (!db) return;
+    const querySnapshot = await db.collection("pixels").get();
     querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
         const img = new Image();
@@ -442,6 +459,12 @@ async function loadPixelsFromFirebase() {
         img.src = data.image;
     });
 }
+
+// Запускаем всё только после загрузки страницы и базы
+window.addEventListener('load', async () => {
+    await loadFirebase();
+    loadPixelsFromFirebase();
+});
 window.addEventListener('load', loadPixelsFromFirebase);
 
 // Функция автоматической оплаты через смарт-контракт USDT
