@@ -400,12 +400,6 @@ async function openBuyModal(w, h) {
 }
 window.openBuyModal = openBuyModal;
 
-// Внутри функции openBuyModal замени кнопки на этот вариант (с window.):
-<button id="btn-pay" onclick="window.payWithWeb3('${priceUSDT}', 'USDT')" style="padding: 12px; background: #7f8c8d; color: white; border: none; border-radius: 5px; cursor: not-allowed; font-weight: bold;" disabled>
-    2. Оплатить и разместить
-</button>
-
-// И чуть ниже саму функцию переключения тоже обнови:
 window.updateModalPrice = function(currency, usdt, bnb) {
     const priceEl = document.getElementById('modal-final-price');
     const payBtn = document.getElementById('btn-pay');
