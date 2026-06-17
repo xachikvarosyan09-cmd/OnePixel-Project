@@ -385,13 +385,13 @@ async function openBuyModal(w, h) {
             <input type="file" id="user-image" accept="image/*" style="width: 100%; margin-bottom: 15px;">
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px;">
-            <button id="btn-connect" onclick="connectWallet()" style="padding: 12px; background: #34495e; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            <button id="btn-connect" onclick="window.connectWallet()" style="padding: 12px; background: #34495e; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
                 1. Подключить кошелек
             </button>
-            <button id="btn-pay" onclick="payWithWeb3('${priceUSDT}', 'USDT')" style="padding: 12px; background: #7f8c8d; color: white; border: none; border-radius: 5px; cursor: not-allowed; font-weight: bold;" disabled>
+            <button id="btn-pay" onclick="window.payWithWeb3('${priceUSDT}', 'USDT')" style="padding: 12px; background: #7f8c8d; color: white; border: none; border-radius: 5px; cursor: not-allowed; font-weight: bold;" disabled>
                 2. Оплатить и разместить
             </button>
-            <button onclick="closeModal()" style="padding: 10px; background: #ccc; border: none; border-radius: 5px; cursor: pointer;">Отмена</button>
+            <button onclick="window.closeModal()" style="padding: 10px; background: #ccc; border: none; border-radius: 5px; cursor: pointer;">Отмена</button>
         </div>
     `;
     overlay.style.display = 'block';
@@ -400,19 +400,23 @@ async function openBuyModal(w, h) {
 }
 window.openBuyModal = openBuyModal;
 
-// Переключение цен в самом модальном окне
+// Внутри функции openBuyModal замени кнопки на этот вариант (с window.):
+<button id="btn-pay" onclick="window.payWithWeb3('${priceUSDT}', 'USDT')" style="padding: 12px; background: #7f8c8d; color: white; border: none; border-radius: 5px; cursor: not-allowed; font-weight: bold;" disabled>
+    2. Оплатить и разместить
+</button>
+
+// И чуть ниже саму функцию переключения тоже обнови:
 window.updateModalPrice = function(currency, usdt, bnb) {
     const priceEl = document.getElementById('modal-final-price');
     const payBtn = document.getElementById('btn-pay');
     if (currency === 'USDT') {
         priceEl.innerText = `${usdt} USDT`;
-        payBtn.setAttribute('onclick', `payWithWeb3('${usdt}', 'USDT')`);
+        payBtn.setAttribute('onclick', `window.payWithWeb3('${usdt}', 'USDT')`);
     } else {
         priceEl.innerText = `${bnb} BNB`;
-        payBtn.setAttribute('onclick', `payWithWeb3('${bnb}', 'BNB')`);
+        payBtn.setAttribute('onclick', `window.payWithWeb3('${bnb}', 'BNB')`);
     }
 };
-
 async function connectWallet() {
     if (typeof window.ethereum !== 'undefined') {
         try {
