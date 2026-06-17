@@ -86,7 +86,7 @@
         const ctx = canvas.getContext('2d');
         
         const gridSize = 10;
-        const pricePerPixel = 0.010;
+        const pricePerPixel = 0.01;
         
         // Начальный зум (сразу мелкий, как тебе нравится)
         let scale = 0.25; 
@@ -399,6 +399,7 @@ async function openBuyModal(w, h) {
     modal.style.flexDirection = 'column';
 }
 window.openBuyModal = openBuyModal;
+window.openBuyModal = openBuyModal;
 
 window.updateModalPrice = function(currency, usdt, bnb) {
     const priceEl = document.getElementById('modal-final-price');
@@ -410,6 +411,13 @@ window.updateModalPrice = function(currency, usdt, bnb) {
         priceEl.innerText = `${bnb} BNB`;
         payBtn.setAttribute('onclick', `window.payWithWeb3('${bnb}', 'BNB')`);
     }
+};
+
+window.closeModal = function() {
+    const modal = document.getElementById('modal');
+    const overlay = document.getElementById('modal-overlay');
+    if (modal) modal.style.display = 'none';
+    if (overlay) overlay.style.display = 'none';
 };
 async function connectWallet() {
     if (typeof window.ethereum !== 'undefined') {
